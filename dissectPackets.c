@@ -16,7 +16,7 @@ static int dissect(const char * file, FILE* fp)
     // all of the data we will be extracting will go into these items
     int totalPackets = 0, packetSize = 0;
     char packetData[2048], version, ihl, tos, flags, ttl, protocol,
-         sourceAddr[16], destAddr[16];
+         sourceAddr[17], destAddr[17];
     uint16_t length, id, fragOffset, checksum;
          
     // reads in our number of packets
@@ -24,7 +24,7 @@ static int dissect(const char * file, FILE* fp)
     /* prints out how many packets we have
        NOTE: the last formatter is to change packet to singular if needed */
     printf("==== File %s contains %d packet%s\n", 
-        file, numPackets, (numPackets == 1) ? "." : "s.");
+        file, totalPackets, (totalPackets == 1) ? "." : "s.");
 
     // defines a buffer of 2048 characters used to hold the data
     for(int packet = 1; packet <= totalPackets; ++packet)
@@ -75,26 +75,35 @@ static int dissect(const char * file, FILE* fp)
         // parses the checksum
         checksum = combineTwoBytes(packetData[10], packetData[11]);
 
+        sprintf(sourceAddr, IP_FORMAT, packetData[12], packetData[13], 
+                packetData[14], packetData[15]);
+        sprintf(destAddr, IP_FORMAT, packetData[16], packetData[17], 
+                packetData[18], packetData[19]);
         
         printf("Version:\t\t"               "0x%x (%u)\n"
                "IHL (Header length):\t\t"   "0x%x (%u)\n"
                "Type of service (TOS):\t\t" "0x%x (%u)\n"
-               "Total length:\t\t"          "\n"
-               "Identification:\t\t"        "\n"
+               "Total length:\t\t"          "0x%x (%u)\n"
+               "Identification:\t\t"        "0x%x (%u)\n"
                "IP Flags:\t\t"              "0x%x (%u)\n"
-               "Fragment offset:\t\t"       "\n"
+               "Fragment offset:\t\t"       "0x%x (%u)\n"
                "Time to live (TTL):\t\t"    "0x%x (%u)\n"
                "Protocol:\t\t"              "0x%x (%u)\n"
-               "Header checksum:\t\t"       "\n"
-               "Source address:\t\t"        "\n"
-               "Destination address:\t\t"   "\n",
+               "Header checksum:\t\t"       "0x%x (%u)\n"
+               "Source address:\t\t"        "%s\n"
+               "Destination address:\t\t"   "%s\n",
                version, version, 
                ihl, ihl,
                tos, tos,
+               length, length,
                id, id,
                flags, flags,
+               fragOffset, fragOffset,
                ttl, ttl,
-               protocol, protocol);
+               protocol, protocol,
+               checksum, checksum,
+               sourceAddr,
+               destAddr);
         /* we don't need to reset data because we're always reading and parsing
            the first 20 bytes (always constant size, the "extra isn't useful */
     }
