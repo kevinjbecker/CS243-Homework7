@@ -4,6 +4,7 @@
 
 #define IP_FORMAT "%u.%u.%u.%u"
 
+
 static uint16_t combineTwoBytes(char byte1, char byte2)
 {
     return ntohs(((uint16_t)byte2 << 8) | byte1);
@@ -12,6 +13,7 @@ static uint16_t combineTwoBytes(char byte1, char byte2)
 
 static int dissect(const char * file, FILE* fp)
 {
+    // all of the data we will be extracting will go into these items
     int totalPackets = 0, packetSize = 0;
     char packetData[2048], version, ihl, tos, flags, ttl, protocol,
          sourceAddr[16], destAddr[16];
@@ -50,19 +52,29 @@ static int dissect(const char * file, FILE* fp)
            Destination address: 132-163
         */    
         
-        // parses our version (first nibble of first byte)
+        // parses our version (the first nibble of first byte)
         version = packetData[0] >> 4;
         /* for this we need to mask off the first nibble (want only second one)
-           which is why we bitwise & with 15 (0b00001111) */
+           which is why we bitwise & with 15 */
         ihl = packetData[0] & 15;
         // parses the type of service
         tos = packetData[1];
+        // parses the length
+        length = combineTwoBytes(packetData[2], packetData[3]);
+        // parses the identification
+        id = combineTwoBytes(packetData[4], packetData[5]);
         // vv gonna be honest I have NO clue what the fuck this info comes from
         flags = 0; // buf[6] >> 5;
+        /* for the fragment offset we need to mask off the first three bits
+           thus we pass combineTwoBits buf[6] & 31 (binary: 0b00011111) */
+        fragOffset = combineTwoBytes((packetData[6] & 31), packetData[7]);
         // parses the time to live
         ttl = packetData[8];
         // parses the protocol
         protocol = packetData[9];
+        // parses the checksum
+        checksum = combineTwoBytes(packetData[10], packetData[11]);
+
         
         printf("Version:\t\t"               "0x%x (%u)\n"
                "IHL (Header length):\t\t"   "0x%x (%u)\n"
