@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
 
-#define IP_FORMAT "%u.%u.%u.%u"
+#define DISSECT_FAILURE -1
+#define DISSECT_SUCCESS 0
 
 enum Protocol{
     ICMP=1, IGMP=2, TCP=6, IGRP=9, 
@@ -65,15 +66,28 @@ static uint16_t combineTwoBytes(char byte1, char byte2)
 static int dissect(const char * file, FILE* fp)
 {
     // all of the data we will be extracting will go into these items
-    int totalPackets = 0, packetSize = 0;
+    int totalPackets, packetSize;
     // the 8 bit data items
     unsigned char packetData[2048], version = 0, ihl = 0, tos = 0, flags = 0, 
-                  ttl = 0, protocol = 0, sourceAddr[17], destAddr[17];
+                  ttl = 0, protocol = 0;
     // the 16 bit data items
     uint16_t length = 0, id = 0, fragOffset = 0, checksum = 0;
          
-    // reads in our number of packets
-    fread(&totalPackets, sizeof(int), 1, fp);
+    /* reads in our number of packets
+       this includes a check to make sure the file is formatted properly so
+       if fread returns something other than 1 (we are reading in 1 integer)
+       we might have an issue */
+    if(fread(&totalPackets, sizeof(int), 1, fp) != 1)
+    {
+        /* if we are at the end of the file, we have 0 packets, we are still 
+           safe to proceed */
+        if(feof(fp))
+            totalPackets = 0;
+        // otherwise we must exit and return DISSECT_FAILURE
+        else
+            return DISSECT_FAILURE;
+    }
+    
     /* prints out how many packets we have
        NOTE: the last formatter is to change packet to singular if needed */
     printf("==== File %s contains %d packet%s\n", 
@@ -84,27 +98,16 @@ static int dissect(const char * file, FILE* fp)
     {
         // prints out what packet we are dissecting
         printf("==> Packet %d\n", packet);
-        fread(&packetSize, sizeof(int), 1, fp);
-        //printf("Packet has %d size\n", packetSize);
-        /* reads in packet
-           reads an area of size packetSize from fp to data */
-        fread(packetData, packetSize, 1, fp);
-        /* 
-           FOR PARSING: 
-           Version: bits 0-3
-           IHL: 4-7
-           TOS: 8-15
-           Total Length: 16-31
-           Identification: 32-47
-           IP Flags: 48-50
-           Fragment offset: 51-63
-           TTL: 64-71
-           Protocol: 72-79
-           Header checksum: 80-95
-           Source address: 96-131
-           Destination address: 132-163
-        */    
         
+        /* reads in our packet size, if it fails we need to stop as something
+           is wrong */
+        if(fread(&packetSize, sizeof(int), 1, fp) != 1)
+            return DISSECT_FAILURE;
+            
+        // reads in  an area of size packetSize from fp to data
+        if(fread(packetData, packetSize, 1, fp) != 1)
+            return DISSECT_FAILURE;
+
         // parses our version (the first nibble of first byte)
         version = packetData[0] >> 4;
         /* for this we need to mask off the first nibble (want only second one)
@@ -157,7 +160,7 @@ static int dissect(const char * file, FILE* fp)
            the first 20 bytes (always constant size, the extra doesn't matter */
     }
     // return 0 upon success
-    return 0;
+    return DISSECT_SUCCESS;
 }
 
 
@@ -179,9 +182,9 @@ int main(int argc, char **argv)
     }
 
     // processes the packet file
-    if( dissect(argv[1], fp) != 0 )
+    if(dissect(argv[1], fp) != DISSECT_SUCCESS)
     {
-        fprintf(stderr, "There was an error reading your file.\n");
+        fprintf(stderr, "An error was encountered while reading the file.\n");
         // closes the file here too just so we don't have any leaks
         fclose(fp);
         return EXIT_FAILURE;
