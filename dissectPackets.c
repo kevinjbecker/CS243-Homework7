@@ -1,3 +1,14 @@
+///
+/// File: dissectPackets.c
+///
+/// Description: Dissects a binary packet file and prints data about the packets
+///              contained in the file.
+///              Usage: dissectPackets filename
+///
+/// @author kjb2503 : Kevin Becker
+///
+// // // // // // // // // // // // // // // // // // // // // // // // // // //
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
@@ -5,12 +16,22 @@
 #define DISSECT_FAILURE -1
 #define DISSECT_SUCCESS 0
 
+// an enum used to determine the protocol used in getProtocolName
 enum Protocol{
     ICMP=1, IGMP=2, TCP=6, IGRP=9, 
     UDP=17, GRE=47, ESP=50, AH=51, 
-    SKIP=57, EIGRP=88, OSPF=89, L2TP=115};
-
-
+    SKIP=57, EIGRP=88, OSPF=89, L2TP=115
+};
+///
+/// Function: getProtocolName
+///
+/// Description: Returns a string with the initials of a protocol name based
+///              upon its value.  USES Protocol enum to determine name.
+///
+/// @param protocol  The unsigned char which is the protocol number.
+///
+/// @return A string representing the protocol name.
+///
 static char* getProtocolName(unsigned char protocol)
 {
     switch(protocol)
@@ -32,13 +53,46 @@ static char* getProtocolName(unsigned char protocol)
 }
 
 
+///
+/// Function: combineTwoBytes
+///
+/// Description: Combines two bytes in network order and returns them in host
+///              order as a short.
+///
+/// @param byte1  The first byte to combine.
+/// @param byte2  The second byte to combine.
+///
+/// @return The two bytes as a short in host order converted from network order.
+///
 static uint16_t combineTwoBytes(char byte1, char byte2)
 {
+    /* 
+       returns the short representation of the two bytes
+       they are passed to the arpa function ntohs by taking the second byte, 
+       casting it as a uint16_t, shifting it 8 bits to the left and then ORing
+       that result with byte1
+       this creates a short out of byte2, shifts it left by 8 bits and appends
+       byte1 to the last 8 bits of the new short
+       
+       bytes must be in this order; function will not work otherwise 
+    */
     return ntohs(((uint16_t)byte2 << 8) | byte1);
 }
 
 
-static int dissect(const char * file, FILE* fp)
+///
+/// Function: dissect
+///
+/// Description: Dissects the packet file and prints data about each packet.
+///
+/// @param const *file  The name of the file.
+/// @param *fp  The FILE pointer to the file which should be read from.
+///
+/// @return An integer based upon the result of the dissection process.
+///         DISSECT_FAILURE if there was any issue encountered with the file;
+///         DISSECT_SUCCESS otherwise.
+///
+static int dissect(const char *file, FILE *fp)
 {
     // all of the data we will be extracting will go into these items
     int totalPackets, packetSize;
@@ -107,6 +161,7 @@ static int dissect(const char * file, FILE* fp)
         // parses the checksum
         checksum = combineTwoBytes(packetData[10], packetData[11]);
         
+        // prints the parsed data about the packet
         printf("Version:\t\t"               "0x%x (%u)\n"
                "IHL (Header length):\t\t"   "0x%x (%u)\n"
                "Type of service (TOS):\t\t" "0x%x (%u)\n"
@@ -139,6 +194,14 @@ static int dissect(const char * file, FILE* fp)
 }
 
 
+///
+/// Function: main
+///
+/// Description: Runs an instance of dissectPackets
+///
+/// @param argc  The number of arguments used to run the program.
+/// @param **argv  A character array of strings which contains the arguments.
+///
 int main(int argc, char **argv)
 {
     // if we weren't given a specified file we need to print usage message.
@@ -158,7 +221,7 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    // processes the packet file
+    // dissects the packet file and prints an error message if one encountered
     if(dissect(argv[1], fp) != DISSECT_SUCCESS)
     {
         fprintf(stderr, "An error was encountered while reading the file.\n");
