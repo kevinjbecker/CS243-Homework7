@@ -12,11 +12,13 @@ static uint16_t combineTwoBytes(char byte1, char byte2)
 
 static int dissect(const char * file, FILE* fp)
 {
-    int numPackets = 0, packetSize = 0;
-    char packetData[2048];
+    int totalPackets = 0, packetSize = 0;
+    char packetData[2048], version, ihl, tos, flags, ttl, protocol,
+         sourceAddr[16], destAddr[16];
+    uint16_t length, id, fragOffset, checksum;
          
     // reads in our number of packets
-    fread(&numPackets, sizeof(int), 1, fp);
+    fread(&totalPackets, sizeof(int), 1, fp);
     /* prints out how many packets we have
        NOTE: the last formatter is to change packet to singular if needed */
     printf("==== File %s contains %d packet%s\n", 
@@ -32,7 +34,48 @@ static int dissect(const char * file, FILE* fp)
         /* reads in packet
            reads an area of size packetSize from fp to data */
         fread(packetData, packetSize, 1, fp);
-
+        /* 
+           FOR PARSING: 
+           Version: bits 0-3
+           IHL: 4-7
+           TOS: 8-15
+           Total Length: 16-31
+           Identification: 32-47
+           IP Flags: 48-50
+           Fragment offset: 51-63
+           TTL: 64-71
+           Protocol: 72-79
+           Header checksum: 80-95
+           Source address: 96-131
+           Destination address: 132-163
+        */    
+        
+        // parses our version (first nibble of first byte)
+        version = packetData[0] >> 4;
+        /* for this we need to mask off the first nibble (want only second one)
+           which is why we bitwise & with 15 (0b00001111) */
+        ihl = packetData[0] & 15;
+        // parses the type of service
+        tos = packetData[1];
+        // vv gonna be honest I have NO clue what the fuck this info comes from
+        flags = 0; // buf[6] >> 5;
+        // parses the time to live
+        ttl = packetData[8];
+        // parses the protocol
+        protocol = packetData[9];
+        
+        printf("Version:\t\t"               "\n"
+               "IHL (Header length):\t\t"   "\n"
+               "Type of service (TOS):\t\t" "\n"
+               "Total length:\t\t"          "\n"
+               "Identification:\t\t"        "\n"
+               "IP Flags:\t\t"              "\n"
+               "Fragment offset:\t\t"       "\n"
+               "Time to live (TTL):\t\t"    "\n"
+               "Protocol:\t\t"              "\n"
+               "Header checksum:\t\t"       "\n"
+               "Source address:\t\t"        "\n"
+               "Destination address:\t\t"   "\n");
         /* we don't need to reset data because we're always reading and parsing
            the first 20 bytes (always constant size, the "extra isn't useful */
     }
