@@ -4,6 +4,57 @@
 
 #define IP_FORMAT "%u.%u.%u.%u"
 
+enum Protocol{
+    ICMP=1, IGMP=2, TCP=6, IGRP=9, 
+    UDP=17, GRE=47, ESP=50, AH=51, 
+    SKIP=57, EIGRP=88, OSPF=89, L2TP=115};
+
+
+static char* getProtocolType(unsigned char protocol)
+{
+    switch(protocol)
+    {
+        case ICMP:
+            return "ICMP";
+            break;
+        case IGMP:
+            return "IGMP";
+            break;
+        case TCP:
+            return "TCP";
+            break;
+        case IGRP:
+            return "IGRP";
+            break;
+        case UDP:
+            return "UDP";
+            break;
+        case GRE:
+            return "GRE";
+            break;
+        case ESP:
+            return "ESP";
+            break;
+        case AH:
+            return "AH";
+            break;
+        case SKIP:
+            return "SKIP";
+            break;
+        case EIGRP:
+            return "EIGRP";
+            break;
+        case OSPF:
+            return "OSPF";
+            break;
+        case L2TP:
+            return "L2TP";
+            break;
+        default:
+            return "Unknown";
+    }
+}
+
 
 static uint16_t combineTwoBytes(char byte1, char byte2)
 {
@@ -77,11 +128,6 @@ static int dissect(const char * file, FILE* fp)
         protocol = packetData[9];
         // parses the checksum
         checksum = combineTwoBytes(packetData[10], packetData[11]);
-
-        sprintf(sourceAddr, IP_FORMAT, packetData[12], packetData[13], 
-                packetData[14], packetData[15]);
-        sprintf(destAddr, IP_FORMAT, packetData[16], packetData[17], 
-                packetData[18], packetData[19]);
         
         printf("Version:\t\t"               "0x%x (%u)\n"
                "IHL (Header length):\t\t"   "0x%x (%u)\n"
@@ -91,10 +137,10 @@ static int dissect(const char * file, FILE* fp)
                "IP Flags:\t\t"              "0x%x (%u)\n"
                "Fragment offset:\t\t"       "0x%x (%u)\n"
                "Time to live (TTL):\t\t"    "0x%x (%u)\n"
-               "Protocol:\t\t"              "0x%x (%u)\n"
+               "Protocol:\t\t"              "%s 0x%x (%u)\n"
                "Header checksum:\t\t"       "0x%x (%u)\n"
-               "Source address:\t\t"        "%s\n"
-               "Destination address:\t\t"   "%s\n",
+               "Source address:\t\t"        "%u.%u.%u.%u\n"
+               "Destination address:\t\t"   "%u.%u.%u.%u\n",
                version, version, 
                ihl, ihl,
                tos, tos,
@@ -103,15 +149,14 @@ static int dissect(const char * file, FILE* fp)
                flags, flags,
                fragOffset, fragOffset,
                ttl, ttl,
-               protocol, protocol,
+               getProtocolType(protocol), protocol, protocol,
                checksum, checksum,
-               sourceAddr,
-               destAddr);
-         break;
+               packetData[12], packetData[13], packetData[14], packetData[15],
+               packetData[16], packetData[17], packetData[18], packetData[19]);	
         /* we don't need to reset data because we're always reading and parsing
-           the first 20 bytes (always constant size, the "extra isn't useful */
+           the first 20 bytes (always constant size, the extra doesn't matter */
     }
-
+    // return 0 upon success
     return 0;
 }
 
