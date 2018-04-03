@@ -11,48 +11,23 @@ enum Protocol{
     SKIP=57, EIGRP=88, OSPF=89, L2TP=115};
 
 
-static char* getProtocolType(unsigned char protocol)
+static char* getProtocolName(unsigned char protocol)
 {
     switch(protocol)
     {
-        case ICMP:
-            return "ICMP";
-            break;
-        case IGMP:
-            return "IGMP";
-            break;
-        case TCP:
-            return "TCP";
-            break;
-        case IGRP:
-            return "IGRP";
-            break;
-        case UDP:
-            return "UDP";
-            break;
-        case GRE:
-            return "GRE";
-            break;
-        case ESP:
-            return "ESP";
-            break;
-        case AH:
-            return "AH";
-            break;
-        case SKIP:
-            return "SKIP";
-            break;
-        case EIGRP:
-            return "EIGRP";
-            break;
-        case OSPF:
-            return "OSPF";
-            break;
-        case L2TP:
-            return "L2TP";
-            break;
-        default:
-            return "Unknown";
+        case ICMP: return "ICMP";
+        case IGMP: return "IGMP";
+        case TCP: return "TCP";
+        case IGRP: return "IGRP";
+        case UDP: return "UDP";
+        case GRE: return "GRE";
+        case ESP: return "ESP";
+        case AH: return "AH";
+        case SKIP: return "SKIP";
+        case EIGRP: return "EIGRP";
+        case OSPF: return "OSPF";
+        case L2TP: return "L2TP";
+        default: return "Unknown protocol";
     }
 }
 
@@ -152,7 +127,7 @@ static int dissect(const char * file, FILE* fp)
                flags, flags,
                fragOffset, fragOffset,
                ttl, ttl,
-               getProtocolType(protocol), protocol, protocol,
+               getProtocolName(protocol), protocol, protocol,
                checksum, checksum,
                packetData[12], packetData[13], packetData[14], packetData[15],
                packetData[16], packetData[17], packetData[18], packetData[19]);	
@@ -166,11 +141,13 @@ static int dissect(const char * file, FILE* fp)
 
 int main(int argc, char **argv)
 {
+    // if we weren't given a specified file we need to print usage message.
     if(argc != 2)
     {
         fprintf(stderr, "Usage: %s filename\n", argv[0]);
         return EXIT_FAILURE;
     }
+    
     // if we get here we can proceed with attempting to open the file
     FILE *fp = fopen(argv[1], "rb");
 
@@ -193,5 +170,7 @@ int main(int argc, char **argv)
     // closes the packet file after we've processed it
     fclose(fp);
 
+    // return EXIT_SUCCESS as we are at the end and everything worked properly
     return EXIT_SUCCESS;
 }
+
