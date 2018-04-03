@@ -64,18 +64,25 @@ static int dissect(const char * file, FILE* fp)
         // parses the protocol
         protocol = packetData[9];
         
-        printf("Version:\t\t"               "\n"
-               "IHL (Header length):\t\t"   "\n"
-               "Type of service (TOS):\t\t" "\n"
+        printf("Version:\t\t"               "0x%x (%u)\n"
+               "IHL (Header length):\t\t"   "0x%x (%u)\n"
+               "Type of service (TOS):\t\t" "0x%x (%u)\n"
                "Total length:\t\t"          "\n"
                "Identification:\t\t"        "\n"
-               "IP Flags:\t\t"              "\n"
+               "IP Flags:\t\t"              "0x%x (%u)\n"
                "Fragment offset:\t\t"       "\n"
-               "Time to live (TTL):\t\t"    "\n"
-               "Protocol:\t\t"              "\n"
+               "Time to live (TTL):\t\t"    "0x%x (%u)\n"
+               "Protocol:\t\t"              "0x%x (%u)\n"
                "Header checksum:\t\t"       "\n"
                "Source address:\t\t"        "\n"
-               "Destination address:\t\t"   "\n");
+               "Destination address:\t\t"   "\n",
+               version, version, 
+               ihl, ihl,
+               tos, tos,
+               id, id,
+               flags, flags,
+               ttl, ttl,
+               protocol, protocol);
         /* we don't need to reset data because we're always reading and parsing
            the first 20 bytes (always constant size, the "extra isn't useful */
     }
