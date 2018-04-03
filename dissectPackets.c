@@ -15,9 +15,11 @@ static int dissect(const char * file, FILE* fp)
 {
     // all of the data we will be extracting will go into these items
     int totalPackets = 0, packetSize = 0;
-    char packetData[2048], version, ihl, tos, flags, ttl, protocol,
-         sourceAddr[17], destAddr[17];
-    uint16_t length, id, fragOffset, checksum;
+    // the 8 bit data items
+    unsigned char packetData[2048], version = 0, ihl = 0, tos = 0, flags = 0, 
+                  ttl = 0, protocol = 0, sourceAddr[17], destAddr[17];
+    // the 16 bit data items
+    uint16_t length = 0, id = 0, fragOffset = 0, checksum = 0;
          
     // reads in our number of packets
     fread(&totalPackets, sizeof(int), 1, fp);
@@ -63,8 +65,9 @@ static int dissect(const char * file, FILE* fp)
         length = combineTwoBytes(packetData[2], packetData[3]);
         // parses the identification
         id = combineTwoBytes(packetData[4], packetData[5]);
-        // vv gonna be honest I have NO clue what the fuck this info comes from
-        flags = 0; // buf[6] >> 5;
+        /* we want to MASK off the last 5 bits rather than shift the bits in 
+           order to get the proper print */
+        flags = packetData[6] & 224;
         /* for the fragment offset we need to mask off the first three bits
            thus we pass combineTwoBits buf[6] & 31 (binary: 0b00011111) */
         fragOffset = combineTwoBytes((packetData[6] & 31), packetData[7]);
@@ -104,6 +107,7 @@ static int dissect(const char * file, FILE* fp)
                checksum, checksum,
                sourceAddr,
                destAddr);
+         break;
         /* we don't need to reset data because we're always reading and parsing
            the first 20 bytes (always constant size, the "extra isn't useful */
     }
